@@ -45,8 +45,9 @@ and ``pnmquant`` to produce b/w PGM files.
 Keyboard bindings defined in ``fig16.bin``:
 
 * ``q``, ``Ctrl-C`` --- quit
-* ``a``, ``s`` --- move image left/right
-* ``w``, ``z`` --- move image up/down
+* ``a``, ``s`` --- scroll image left/right
+* ``w``, ``z`` --- scroll image up/down
+* ``i`` --- negative
 * ``enter`` --- refresh image
 
 

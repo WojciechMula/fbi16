@@ -33,6 +33,7 @@ Changelog:
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#include <sys/io.h>
 
 #include <linux/fb.h>
 #include <linux/kd.h>
@@ -279,11 +280,13 @@ struct termios term;
 
 void init() {
 	int old_clflag;
+	int port;
 	struct fb_fix_screeninfo fixscreeninfo;
 	struct fb_fix_screeninfo varscreeninfo;
 	
 	struct sigaction sa;
 	struct vt_mode s;
+
 	
 	/* open terminal */
 	tty_fd	= open("/dev/tty", O_RDWR); halt_on_error("/dev/tty");
@@ -294,7 +297,7 @@ void init() {
 	term.c_lflag	&= ~(ICANON | ECHO);
 	tcsetattr(tty_fd, TCSAFLUSH, &term); halt_on_error("tcsetattr");
 	term.c_lflag	 = old_clflag;
-
+	
 	/* set signal handlers */
 	signal(SIGINT,  sig_break); ordie("SIGINT");
 	signal(SIGTERM, sig_break); ordie("SIGTERM");
