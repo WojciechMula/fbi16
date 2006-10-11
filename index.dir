@@ -1,0 +1,5 @@
+style:	style.css
+rest:	index.txt
+
+copy:	fbi16.c
+copy:	fbi16.sh

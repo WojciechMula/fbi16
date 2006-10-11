@@ -1,0 +1,68 @@
+========================================================================
+	B/W image viewer for VGA16fb framebuffer
+========================================================================
+
+Last update: 11.10.2006
+
+
+Introduction
+-----------------------------------------------------------
+
+This small utility displays PGM files in VGA16fb framebuffer.
+
+Kernel module switches to mode 640x480x16, which is not
+supported by any program.
+
+It is caused by weird EGA video memory model---to put pixel
+you have to reprogram video card!  Programs that run without
+root privileges can't play with hardware directly, and
+moreover vga16fb module doesn't provide any ioctl to set EGA
+ports.
+
+We have to rely on vga16fb settings---fortunatelly it leaves
+card in *write mode 0* (default EGA mode), sets *bit mask*
+to ``0xff`` and do not reset color.  So we are able
+to put 8 pixels at once in the same, last used color.
+
+Program can't set individual pixels different colors, and
+because of that ``fbi16`` displays only b/w images.
+
+
+Compilation
+-----------------------------------------------------------
+
+::
+
+		gcc fbi16.c -o fbi16.bin
+
+
+Usage
+-----------------------------------------------------------
+
+To view any image run shell script---it uses ``convert``
+and ``pnmquant`` to produce b/w PGM files.
+
+Keyboard bindings defined in ``fig16.bin``:
+
+* ``q``, ``Ctrl-C`` --- quit
+* ``a``, ``s`` --- move image left/right
+* ``w``, ``z`` --- move image up/down
+* ``enter`` --- refresh image
+
+
+Downloads
+-----------------------------------------------------------
+
+* `fbi16.sh <fbi16.sh>`_  --- shell script
+* `fbi16.c <fbi16.c>`_    --- source file
+
+
+Author
+-----------------------------------------------------------
+
+Wojciech Mu³a, wojciech_mula@poczta.onet.pl
+
+
+
+..
+	vim: tw=60 ts=4 sw=4
