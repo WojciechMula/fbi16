@@ -75,6 +75,9 @@ This program needs root privileges, but can display 16 color
 images.  It reads raw RGB images.  To view any image use
 shell script---it uses ``convert`` to produce RGB files.
 
+**Warning**: while scrolling image screen is flickering,
+and I do not any idea how to avoid it.
+
 While displaying prevent user from switching console.
 
 Compilation
