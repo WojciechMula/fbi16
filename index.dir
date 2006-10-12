@@ -3,3 +3,5 @@ rest:	index.txt
 
 copy:	fbi16.c
 copy:	fbi16.sh
+copy:	fbi16_2.c
+copy:	fbi16_2.sh
