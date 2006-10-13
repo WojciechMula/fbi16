@@ -7,5 +7,5 @@ then
 	then
 		convert -colors 16 $1 $f
 	fi
-	./a.out `identify -format "%w" "$1"` `identify -format "%h" "$1"` $f
+	fbi16_2.bin `identify -format "%w" "$1"` `identify -format "%h" "$1"` $f
 fi
