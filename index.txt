@@ -1,8 +1,8 @@
-========================================================================
-	Image viewer for VGA16fb framebuffer
-========================================================================
+===========================================================
+         Image viewer for VGA16fb framebuffer
+===========================================================
 
-Last update: 12.10.2006
+Last update: 13.10.2006
 
 
 Introduction
@@ -56,8 +56,14 @@ Keyboard bindings
 ~~~~~~~~~~~~~~~~~
 
 * ``q``, ``Ctrl-C`` --- quit
-* ``a``, ``s`` --- scroll image left/right
-* ``w``, ``z`` --- scroll image up/down
+* ``a`` --- scroll image left
+* ``A`` --- scroll image left (faster)
+* ``a`` --- scroll image right
+* ``S`` --- scroll image right (faster)
+* ``w`` --- scroll image down
+* ``W`` --- scroll image dewn (faster)
+* ``z`` --- scroll image up
+* ``Z`` --- scroll image up (faster)
 * ``i`` --- negative
 * ``enter`` --- refresh image
 
@@ -78,7 +84,7 @@ shell script---it uses ``convert`` to produce RGB files.
 **Warning**: while scrolling image screen is flickering,
 and I do not any idea how to avoid it.
 
-While displaying prevent user from switching console.
+While displaying user can't switching consoles.
 
 Compilation
 ~~~~~~~~~~~
@@ -102,8 +108,14 @@ Keyboard bindings
 ~~~~~~~~~~~~~~~~~
 
 * ``q``, ``Ctrl-C`` --- quit
-* ``a``, ``s`` --- scroll image left/right
-* ``w``, ``z`` --- scroll image up/down
+* ``a`` --- scroll image left
+* ``A`` --- scroll image left (faster)
+* ``a`` --- scroll image right
+* ``S`` --- scroll image right (faster)
+* ``w`` --- scroll image down
+* ``W`` --- scroll image dewn (faster)
+* ``z`` --- scroll image up
+* ``Z`` --- scroll image up (faster)
 * ``enter`` --- refresh image
 
 Downloads
