@@ -9,6 +9,8 @@
 		gcc fbi16.c -o fbi16.bin
 
 Changelog:
+	13.10.2006
+		- fixed stupid error
 	12.10.2006
 		- display 16-color images (but needs root privilages)
 	11.10.2006
@@ -47,9 +49,6 @@ Changelog:
 #define CTRL_DATA	0x3cf
 #define SEQ_IDX		0x3c4
 #define SEQ_DATA	0x3c5
-#define CRTC_IDX	0x3d4
-#define CRTC_DATA	0x3d5
-
 
 typedef char bool;
 #define false 0
@@ -156,36 +155,74 @@ int main(int argc, char* argv[]) {
 			case 'Q':
 				quit = true;
 				break;
+
+			/* scroll left */
 			case 's':
-			case 'S':
 				if (blocks > 640/8) {
 					dx += 1;
 					if (dx > (blocks - 640/8))
 						dx = blocks - 640/8;
 				}
 				break;
+			case 'S':
+				if (blocks > 640/8) {
+					dx += 2;
+					if (dx > (blocks - 640/8))
+						dx = blocks - 640/8;
+				}
+				break;
+
+			/* scroll right */
 			case 'a':
-			case 'A':
 				if (blocks > 640/8) {
 					dx -= 1;
 					if (dx < 0) dx = 0;
+					refresh = true;
 				}
 				break;
+			case 'A':
+				if (blocks > 640/8) {
+					dx -= 2;
+					if (dx < 0) dx = 0;
+					refresh = true;
+				}
+				break;
+
+			/* scroll down */
 			case 'w':
-			case 'W':
 				if (height > 480) {
 					dy += 10;
 					if (dy > (height - 480))
 						dy = height - 480;
+					refresh = true;
 				}
 				break;
+			case 'W':
+				if (height > 480) {
+					dy += 20;
+					if (dy > (height - 480))
+						dy = height - 480;
+					refresh = true;
+				}
+				break;
+			
+			/* scroll up */
 			case 'z':
-			case 'Z':
 				if (height > 480) {
 					dy -= 10;
 					if (dy < 0) dy = 0;
+					refresh = true;
 				}
 				break;
+			case 'Z':
+				if (height > 480) {
+					dy -= 20;
+					if (dy < 0) dy = 0;
+					refresh = true;
+				}
+				break;
+
+			/* refresh image */
 			case '\n':
 				refresh = true;
 				break;
@@ -253,7 +290,7 @@ void read_raw(FILE *f) {
 
 	for (y=0; y < height; y++) {
 		if (fread((void*)line, width, 3, f) < 3) 
-			error("Truncated PNM file");
+			error("Truncated file (are width & height correct?)");
 		halt_on_error("fread");
 		
 		for (x=0; x < width; x++) {
@@ -306,9 +343,6 @@ void init() {
 	/* 2. sequencer */
 	ioperm(SEQ_IDX,   1, 1);	ordie("ioperm (3)");
 	ioperm(SEQ_DATA,  1, 1);	ordie("ioperm (4)");
-	/* 3. CRTC controler */
-	ioperm(CRTC_IDX,  1, 1);	ordie("ioperm (5)");
-	ioperm(CRTC_DATA, 1, 1);	ordie("ioperm (6)");
 	
 	/* set signal handlers */
 	signal(SIGINT,  sig_break); ordie("SIGINT");
@@ -320,10 +354,10 @@ void init() {
 	fb_fd	= open("/dev/fb0", O_RDWR | O_NONBLOCK); ordie("/dev/fb0");
 	
 	/* get some info about framebuffer */
-	ioctl(fb_fd, FBIOGET_VSCREENINFO, &varscreeninfo); ordie("varscreen");
+	ioctl(fb_fd, FBIOGET_VSCREENINFO, &varscreeninfo); ordie("varscreeninfo");
 	if (varscreeninfo.type != FB_TYPE_VGA_PLANES)
 		error("This program supports just vga16fb framebuffer");
-	ioctl(fb_fd, FBIOGET_FSCREENINFO, &fixscreeninfo); ordie("fixscreen");
+	ioctl(fb_fd, FBIOGET_FSCREENINFO, &fixscreeninfo); ordie("fixscreeninfo");
 
 	/* map video memory to our memory segment */
 	screen_size = fixscreeninfo.smem_len;
@@ -339,8 +373,8 @@ void init() {
 	sigaction(SIGUSR2, &sa, NULL); ordie("sigaction(SIGUSR2)");
 
 	s.mode   = VT_PROCESS;
-	s.acqsig = SIGUSR1;		/* sig user 1 is send on switch to our vt con */
-	s.relsig = SIGUSR2;		/* sig user 2 is sent on switch to another vt con */
+	s.acqsig = SIGUSR1;		/* SIGUSER1 is sent on switch to our vt con */
+	s.relsig = SIGUSR2;		/* SIGUSER2 is sent on switch to another vt con */
 
 	ioctl(tty_fd, VT_SETMODE, &s); ordie("VT_SETMODE");
 
@@ -368,7 +402,7 @@ void clean() {
 	printf("\033[2J");
 	/* ESC 8 -- restore saved state */
 	printf("\0338");
-	/* ESC ] R -- reset paletter */
+	/* ESC ] R -- reset palette */
 	printf("\033]R");
 
 }
@@ -418,8 +452,8 @@ void show_image(int dx, int dy) {
 	outb(8, CTRL_IDX);
 	outb(0xff, CTRL_DATA);	/* enable all bits */
 
-	w = width  > 640 ? 640 : width;
-	h = height > 480 ? 480 : height;
+	w = width  > 640 ? 640/8 : blocks;
+	h = height > 480 ? 480   : height;
 
 	screen_offset = 0;
 	plane_offset  = dy * blocks + dx;
@@ -427,7 +461,7 @@ void show_image(int dx, int dy) {
 
 		/* clear current line */
 		EGA_set_color(0x00);
-		EGA_mask_planes(0x0f);
+		EGA_mask_planes(0x0f); /* enable all planes */
 		memset(&screen[screen_offset], 0xff, 640/8);
 
 		
@@ -435,7 +469,7 @@ void show_image(int dx, int dy) {
 
 		p = screen[screen_offset];
 		/* copy plane 0 */
-		EGA_mask_planes(0x01);
+		EGA_mask_planes(0x0f);
 		memcpy(&screen[screen_offset], &plane0[plane_offset], w);
 		
 		/* copy plane 1 */
@@ -470,7 +504,7 @@ void vt_activate(int dummy) {
 }
 
 void vt_release(int dummy) {
-	ioctl(tty_fd, VT_RELDISP, 0); /* do not allow to switch consoles */
+	ioctl(tty_fd, VT_RELDISP, 0); /* do not allow console switching */
 }
 
 void sig_break(int _) {
