@@ -9,6 +9,8 @@
 		gcc fbi16.c -o fbi16.bin
 
 Changelog:
+	13.10.2006
+		- small changes (cleanup code, faster show_image)
 	11.10.2006
 		- more errors are detected
 		- read 16-bit PGMs
@@ -70,12 +72,10 @@ void clean();
 /* show shifed image */
 void show_image(int dx, int dy);
 
-/* show single line */
-void display_line(int x, int y1, int y2, unsigned int n);
-
 /* reads PGM file and binarizes it */
 void read_pgm(FILE *f);
 
+/* as name states */
 void invert_image();
 
 
@@ -93,6 +93,7 @@ int main(int argc, char* argv[]) {
 	bool quit		= false;
 	bool refresh	= true;
 	FILE *f;
+	int pdx, pdy;
 
 	if (argc < 2) {
 		puts("Usage: fbi16 [file]");
@@ -108,10 +109,12 @@ int main(int argc, char* argv[]) {
 	read_pgm(f);
 	fclose(f);
 
-	dx = dy = 0;
+	pdx = pdy = dx = dy = 0;
 	while (!quit) {
-		if (refresh) {
+		if (refresh || pdx != dx || pdy != dy) {
 			show_image(dx, dy);
+			pdx = dx;
+			pdy = dy;
 			refresh = false;
 		}
 		switch (getchar()) {
@@ -119,25 +122,41 @@ int main(int argc, char* argv[]) {
 			case 'Q':
 				quit = true;
 				break;
+
+			/* scroll left */
 			case 's':
-			case 'S':
 				if (blocks > 640/8) {
 					dx += 1;
 					if (dx > (blocks - 640/8))
 						dx = blocks - 640/8;
-					refresh = true;
 				}
 				break;
+			case 'S':
+				if (blocks > 640/8) {
+					dx += 2;
+					if (dx > (blocks - 640/8))
+						dx = blocks - 640/8;
+				}
+				break;
+
+			/* scroll right */
 			case 'a':
-			case 'A':
 				if (blocks > 640/8) {
 					dx -= 1;
 					if (dx < 0) dx = 0;
 					refresh = true;
 				}
 				break;
+			case 'A':
+				if (blocks > 640/8) {
+					dx -= 2;
+					if (dx < 0) dx = 0;
+					refresh = true;
+				}
+				break;
+
+			/* scroll down */
 			case 'w':
-			case 'W':
 				if (height > 480) {
 					dy += 10;
 					if (dy > (height - 480))
@@ -145,18 +164,37 @@ int main(int argc, char* argv[]) {
 					refresh = true;
 				}
 				break;
+			case 'W':
+				if (height > 480) {
+					dy += 20;
+					if (dy > (height - 480))
+						dy = height - 480;
+					refresh = true;
+				}
+				break;
+			
+			/* scroll up */
 			case 'z':
-			case 'Z':
 				if (height > 480) {
 					dy -= 10;
 					if (dy < 0) dy = 0;
 					refresh = true;
 				}
 				break;
+			case 'Z':
+				if (height > 480) {
+					dy -= 20;
+					if (dy < 0) dy = 0;
+					refresh = true;
+				}
+				break;
+
+			/* refresh image */
 			case '\n':
 				refresh = true;
 				break;
 
+			/* invert image */ 
 			case 'i':
 			case 'I':
 				invert_image();
@@ -280,7 +318,6 @@ struct termios term;
 
 void init() {
 	int old_clflag;
-	int port;
 	struct fb_fix_screeninfo fixscreeninfo;
 	struct fb_fix_screeninfo varscreeninfo;
 	
@@ -327,8 +364,8 @@ void init() {
 	sigaction(SIGUSR2, &sa, NULL); ordie("sigaction(SIGUSR2)");
 
 	s.mode   = VT_PROCESS;
-	s.acqsig = SIGUSR1;		// sig user 1 is send on switch to our con
-	s.relsig = SIGUSR2;		// sig user 2 is sent on switch to another con
+	s.acqsig = SIGUSR1;		/* SIGUSER1 is sent on switch to our con */
+	s.relsig = SIGUSR2;		/* SIGUSER2 is sent on switch to another con */
 
 	ioctl(tty_fd, VT_SETMODE, &s); ordie("VT_SETMODE");
 
@@ -341,61 +378,51 @@ void init() {
 
 void clean() {
 #if SETMODE
-	// set console mode (text, rather graphics)
+	/* set console mode (text, rather graphics) */
 	ioctl(tty_fd, KDSETMODE, KD_TEXT);
 #endif
 	
-	// restore terminal mode
+	/* restore terminal mode */
 	tcsetattr(tty_fd, TCSAFLUSH, &term);
 	
-	// close opened files
+	/* close opened files */
 	close(fb_fd);
 	close(tty_fd);
 
-	// and unmap video memory
+	/* and unmap video memory */
 	munmap(screen, screen_size);
 
-	// ESC [ 2 J -- erase whole screen
+	/* ESC [ 2 J -- erase whole screen */
 	printf("\033[2J");
-	// ESC 8 -- restore saved state
+	/* ESC 8 -- restore saved state */
 	printf("\0338");
 
 }
 
-
-void display_line(int x, int y1, int y2, unsigned int n) {
-	memcpy(
-		&screen[y1*640/8],
-		&image [y2*blocks + x],
-		n/8
-	);
-}
-
 void show_image(int dx, int dy) {
-	int y;
+	int w, h, y;
+	int screen_offset, image_offset;
 
-	printf("\033[1m");
-	printf("\033[40m");
-	printf("\033[37m");
-	printf(" \033[1;1H"); fflush(stdout);
+	printf("\033[1m"		/* set bright */
+	       "\033[37m"		/*     white foreground */
+	       "\033[40m"		/* and black background */
+	       " \033[1;1H"		/* move cursor to left upper corner */
+	); fflush(stdout);
 #ifdef _SETMODE
 	ioctl(tty_fd, KDSETMODE, KD_GRAPHICS);
 #endif
 
-	if (height > 480)
-		for (y=0; y<480; y++) {
-			if (width <= 640) 
-				display_line(dx, y, y+dy, width);
-			else
-				display_line(dx, y, y+dy, 640);
-		}
-	else
-		for (y=0; y<height; y++) {
-			if (width <= 640) 
-				display_line(dx, y, y+dy, width);
-			else
-				display_line(dx, y, y+dy, 640);
-		}
+	h = height > 480 ? 480   : height;
+	w = width  > 640 ? 640/8 : blocks;
+
+	screen_offset = 0;
+	image_offset  = dy * blocks + dx;
+	for (y=0; y<h; y++) {
+		memcpy(&screen[screen_offset], &image[image_offset], w);
+
+		screen_offset += 640/8;
+		image_offset  += blocks;
+	}
 #ifdef _SETMODE
 	ioctl(tty_fd, KDSETMODE, KD_TEXT);
 #endif
