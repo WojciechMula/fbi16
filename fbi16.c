@@ -11,6 +11,7 @@
 Changelog:
 	15.10.2006
 		- center images
+		- do not panic if open in virtual terminal
 	13.10.2006
 		- small changes (cleanup code, faster show_image)
 	11.10.2006
@@ -373,18 +374,21 @@ void init() {
                   PROT_READ|PROT_WRITE, MAP_SHARED, fb_fd, 0);
 	halt_on_error("mmap");
 
-	/* take over virtual terminal switching */
-	ioctl(tty_fd, VT_GETMODE, &s); ordie("VT_GETMODE");
-	sa.sa_handler = vt_activate;
-	sigaction(SIGUSR1, &sa, NULL); ordie("sigaction(SIGUSR1)");
-	sa.sa_handler = vt_release;
-	sigaction(SIGUSR2, &sa, NULL); ordie("sigaction(SIGUSR2)");
+	/* take over virtual terminal switching (if we are running in VT) */
+	if (ioctl(tty_fd, VT_GETMODE, &s) == 0) {
+		sa.sa_handler = vt_activate;
+		sigaction(SIGUSR1, &sa, NULL); ordie("sigaction(SIGUSR1)");
+		sa.sa_handler = vt_release;
+		sigaction(SIGUSR2, &sa, NULL); ordie("sigaction(SIGUSR2)");
 
-	s.mode   = VT_PROCESS;
-	s.acqsig = SIGUSR1;		/* SIGUSER1 is sent on switch to our con */
-	s.relsig = SIGUSR2;		/* SIGUSER2 is sent on switch to another con */
+		s.mode   = VT_PROCESS;
+		s.acqsig = SIGUSR1;		/* SIGUSER1 is sent on switch to our con */
+		s.relsig = SIGUSR2;		/* SIGUSER2 is sent on switch to another con */
 
-	ioctl(tty_fd, VT_SETMODE, &s); ordie("VT_SETMODE");
+		ioctl(tty_fd, VT_SETMODE, &s); ordie("VT_SETMODE");
+	}
+	else
+		errno = 0; /* reset errno (set by ioctl) */
 
 	/* ESC 7 -- terminal: save current state */
 	printf("\0337");
