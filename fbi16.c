@@ -9,6 +9,8 @@
 		gcc fbi16.c -o fbi16.bin
 
 Changelog:
+	15.10.2006
+		- center images
 	13.10.2006
 		- small changes (cleanup code, faster show_image)
 	11.10.2006
@@ -60,8 +62,7 @@ int blocks;				/* rounded up width/8 */
 int height;				/* image height */
 int dx, dy;				/* coordinates of left upper corner of displayed
                            image's portion */
-char* filename;
-time_t modtime;
+int sdx, sdy;
 
 /* initialzes program: opens files, registers signal handlers, etc. */
 void init();
@@ -93,7 +94,8 @@ int main(int argc, char* argv[]) {
 	bool quit		= false;
 	bool refresh	= true;
 	FILE *f;
-	int pdx, pdy;
+	char *filename;
+	int  pdx, pdy;
 
 	if (argc < 2) {
 		puts("Usage: fbi16 [file]");
@@ -108,6 +110,19 @@ int main(int argc, char* argv[]) {
 	f = fopen(filename, "rb"); halt_on_error(filename);
 	read_pgm(f);
 	fclose(f);
+
+
+	/* center horizontal */
+	if (blocks < 640/8)
+		sdx = (640/8 - blocks)/2;
+	else
+		sdx = 0;
+	
+	/* center verical */
+	if (height < 480)
+		sdy = (480 - height)/2;
+	else
+		sdy = 0;
 
 	pdx = pdy = dx = dy = 0;
 	while (!quit) {
@@ -191,6 +206,8 @@ int main(int argc, char* argv[]) {
 
 			/* refresh image */
 			case '\n':
+			case 'r':
+			case 'R':
 				refresh = true;
 				break;
 
@@ -354,7 +371,7 @@ void init() {
 	screen_size = fixscreeninfo.smem_len;
 	screen = mmap((void*)fixscreeninfo.smem_start, screen_size,
                   PROT_READ|PROT_WRITE, MAP_SHARED, fb_fd, 0);
-
+	halt_on_error("mmap");
 
 	/* take over virtual terminal switching */
 	ioctl(tty_fd, VT_GETMODE, &s); ordie("VT_GETMODE");
@@ -368,7 +385,6 @@ void init() {
 	s.relsig = SIGUSR2;		/* SIGUSER2 is sent on switch to another con */
 
 	ioctl(tty_fd, VT_SETMODE, &s); ordie("VT_SETMODE");
-
 
 	/* ESC 7 -- terminal: save current state */
 	printf("\0337");
@@ -396,7 +412,6 @@ void clean() {
 	printf("\033[2J");
 	/* ESC 8 -- restore saved state */
 	printf("\0338");
-
 }
 
 void show_image(int dx, int dy) {
@@ -415,8 +430,8 @@ void show_image(int dx, int dy) {
 	h = height > 480 ? 480   : height;
 	w = width  > 640 ? 640/8 : blocks;
 
-	screen_offset = 0;
-	image_offset  = dy * blocks + dx;
+	screen_offset = sdy * 640/8 + sdx;
+	image_offset  = dy  * blocks + dx;
 	for (y=0; y<h; y++) {
 		memcpy(&screen[screen_offset], &image[image_offset], w);
 

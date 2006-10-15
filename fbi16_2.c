@@ -71,6 +71,7 @@ int height;				/* image height */
 int dx, dy;				/* coordinates of left upper corner of displayed
                            image's portion */
 
+int sdx, sdy;
 
 uint8_t LUT[16][3];
 
@@ -138,9 +139,24 @@ int main(int argc, char* argv[]) {
 	/* Set palette */
 	for (i=0; i<16; i++)
 		printf("\033]P%x%02x%02x%02x", i, LUT[i][0], LUT[i][1], LUT[i][2]);
+	
+	/* ESC [ 2 J -- erase whole screen */
+	printf("\033[2J");
 	fflush(stdout);
+	
+	/* center horizontal */
+	if (blocks < 640/8)
+		sdx = (640/8 - blocks)/2;
+	else
+		sdx = 0;
+	
+	/* center verical */
+	if (height < 480)
+		sdy = (480 - height)/2;
+	else
+		sdy = 0;
 
-	/* Go into interactive loop */
+	/* Enter into interactive loop */
 	pdx = pdy = dx = dy = 0;
 	while (!quit) {
 		if (refresh || pdx != dx || pdy != dy) {
@@ -455,8 +471,8 @@ void show_image(int dx, int dy) {
 	w = width  > 640 ? 640/8 : blocks;
 	h = height > 480 ? 480   : height;
 
-	screen_offset = 0;
-	plane_offset  = dy * blocks + dx;
+	screen_offset = sdy * 640/8 + sdx;
+	plane_offset  = dy  * blocks + dx;
 	for (y=0; y<h; y++) {
 
 		/* clear current line */
