@@ -9,6 +9,8 @@
 		gcc fbi16.c -o fbi16.bin
 
 Changelog:
+	15.10.2006
+		- center images
 	13.10.2006
 		- fixed stupid error
 	12.10.2006
@@ -193,14 +195,12 @@ int main(int argc, char* argv[]) {
 				if (blocks > 640/8) {
 					dx -= 1;
 					if (dx < 0) dx = 0;
-					refresh = true;
 				}
 				break;
 			case 'A':
 				if (blocks > 640/8) {
 					dx -= 2;
 					if (dx < 0) dx = 0;
-					refresh = true;
 				}
 				break;
 
@@ -210,7 +210,6 @@ int main(int argc, char* argv[]) {
 					dy += 10;
 					if (dy > (height - 480))
 						dy = height - 480;
-					refresh = true;
 				}
 				break;
 			case 'W':
@@ -218,7 +217,6 @@ int main(int argc, char* argv[]) {
 					dy += 20;
 					if (dy > (height - 480))
 						dy = height - 480;
-					refresh = true;
 				}
 				break;
 			
@@ -227,19 +225,19 @@ int main(int argc, char* argv[]) {
 				if (height > 480) {
 					dy -= 10;
 					if (dy < 0) dy = 0;
-					refresh = true;
 				}
 				break;
 			case 'Z':
 				if (height > 480) {
 					dy -= 20;
 					if (dy < 0) dy = 0;
-					refresh = true;
 				}
 				break;
 
 			/* refresh image */
 			case '\n':
+			case 'r':
+			case 'R':
 				refresh = true;
 				break;
 		}
@@ -453,6 +451,8 @@ void show_image(int dx, int dy) {
 	int screen_offset, plane_offset;
 	
 	volatile uint8_t p;
+
+	printf("\033[1;1H"); fflush(stdout);
 
 #ifdef _SETMODE
 	ioctl(tty_fd, KDSETMODE, KD_GRAPHICS);

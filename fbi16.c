@@ -160,14 +160,12 @@ int main(int argc, char* argv[]) {
 				if (blocks > 640/8) {
 					dx -= 1;
 					if (dx < 0) dx = 0;
-					refresh = true;
 				}
 				break;
 			case 'A':
 				if (blocks > 640/8) {
 					dx -= 2;
 					if (dx < 0) dx = 0;
-					refresh = true;
 				}
 				break;
 
@@ -177,7 +175,6 @@ int main(int argc, char* argv[]) {
 					dy += 10;
 					if (dy > (height - 480))
 						dy = height - 480;
-					refresh = true;
 				}
 				break;
 			case 'W':
@@ -185,7 +182,6 @@ int main(int argc, char* argv[]) {
 					dy += 20;
 					if (dy > (height - 480))
 						dy = height - 480;
-					refresh = true;
 				}
 				break;
 			
@@ -194,14 +190,12 @@ int main(int argc, char* argv[]) {
 				if (height > 480) {
 					dy -= 10;
 					if (dy < 0) dy = 0;
-					refresh = true;
 				}
 				break;
 			case 'Z':
 				if (height > 480) {
 					dy -= 20;
 					if (dy < 0) dy = 0;
-					refresh = true;
 				}
 				break;
 

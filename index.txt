@@ -2,7 +2,7 @@
          Image viewer for VGA16fb framebuffer
 ===========================================================
 
-Last update: 13.10.2006
+Last update: 15.10.2006
 
 
 Introduction
