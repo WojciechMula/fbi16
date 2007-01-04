@@ -6,7 +6,7 @@
 	license BSD
 
 	compile:
-		gcc fbi16.c -o fbi16.bin
+		gcc -O2 fbi16.c -o fbi16.bin
 
 Changelog:
 	15.10.2006
