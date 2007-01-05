@@ -5,3 +5,6 @@ copy:	fbi16.c
 copy:	fbi16.sh
 copy:	fbi16_2.c
 copy:	fbi16_2.sh
+
+copy:	view_img.c
+copy:	img.xbm
